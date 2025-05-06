@@ -1,6 +1,5 @@
 from Imports import *
 from User_DB import Events, Class, User, get_user_by_id, get_user_by_username, add_user_to_class
-from main import bcrypt
 
 #Taking information for username and password to set up new account
 class RegisterForm(FlaskForm):

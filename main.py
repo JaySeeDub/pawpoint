@@ -2,9 +2,6 @@ from Imports import *
 from app import *
 from User_DB import User
 
-#For hashing passwords
-bcrypt = Bcrypt(app)
-
 #reload user id from database
 login_manager = LoginManager()
 login_manager.init_app(app)
