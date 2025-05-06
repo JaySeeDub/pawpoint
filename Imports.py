@@ -22,3 +22,26 @@ from werkzeug.utils import secure_filename
 import uuid as uuid
 import json
 from flask_cors import CORS
+
+#initialize app
+app = Flask(__name__)
+CORS(app)
+
+app.config['TEMPLATES_AUTO_RELOAD'] = True
+app.jinja_env.cache = {}
+# Configure upload folder and allowed extensions
+UPLOAD_FOLDER = 'static/uploads/profile_pictures'
+ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif'}
+
+app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
+
+# Helper function to check allowed file extensions
+def allowed_file(filename):
+    return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
+
+# Initialize database/set a secret key
+app.config['SECRET_KEY'] = '00123801989349857773048209842893048'
+app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///database.db"
+app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
+db = SQLAlchemy(app)
+migrate = Migrate(app, db)
