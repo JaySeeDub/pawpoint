@@ -1,5 +1,4 @@
 from Imports import *
-from main import db
 
 Verbose = False
 
