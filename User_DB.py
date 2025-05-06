@@ -1,4 +1,5 @@
 from Imports import *
+from main import *
 
 Verbose = False
 
