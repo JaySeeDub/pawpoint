@@ -22,4 +22,3 @@ from werkzeug.utils import secure_filename
 import uuid as uuid
 import json
 from flask_cors import CORS
-from waitress import serve
