@@ -1,6 +1,6 @@
 from Imports import *
-from User_DB import *
 from app import *
+from User_DB import User
 
 #For hashing passwords
 bcrypt = Bcrypt(app)
