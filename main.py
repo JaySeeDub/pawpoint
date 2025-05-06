@@ -50,8 +50,4 @@ if __name__ == "__main__":
         #db.drop_all()
         #app.jinja_env.cache = {}
         db.create_all()
-
-    if os.environ.get("USE_WAITRESS"):
-        serve(app, host="0.0.0.0", port=5000)
-    else:
-        app.run(debug=True)
+    app.run(debug=True)
