@@ -5,8 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel = 'stylesheet' href = 'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css'>
     <link rel = 'stylesheet' href = '../static/sidebar/calendar.css'>
-    <link href="https://fonts.googleapis.com/css2?family=Poppins&display=swap" rel="stylesheet">
-    <title>Calendar</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet" />
     <link href='https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css' rel='stylesheet'>
     <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.17/index.global.min.js"></script>
     <script src='https://cdn.jsdelivr.net/npm/fullcalendar/index.global.min.js'></script>
@@ -31,6 +30,33 @@
     <div id='calendar-container'>
       <div id='calendar'></div>
     </div>
+        <button id="deleteAllEventsBtn" class="delete-btn">Delete All Events</button>
+        <script>
+          document.getElementById('deleteAllEventsBtn').addEventListener('click', function () {
+            if (confirm('Are you sure you want to delete all events? This action cannot be undone.')) {
+              fetch('/api/events/delete_all', {
+                method: 'DELETE',
+                headers: {
+                  'Content-Type': 'application/json',
+                },
+              })
+                .then(response => response.json())
+                .then(data => {
+                  if (data.message) {
+                    alert(data.message);
+                    // Optionally, refresh the page or update the calendar
+                    location.reload();
+                  } else if (data.error) {
+                    alert(data.error);
+                  }
+                })
+                .catch(error => {
+                  console.error('Error:', error);
+                  alert('An error occurred while deleting events.');
+                });
+            }
+          });
+        </script>
 
     <div class="todo" id="myDIV">
       <h1>Create Event</h1>

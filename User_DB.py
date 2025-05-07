@@ -9,6 +9,12 @@ friends_table = db.Table(
  )
 
 
+class Class(db.Model):
+    __tablename__ = 'classes'
+
+    id = Column(Integer, primary_key=True, autoincrement=True)  # Auto-incrementing primary key
+    name = Column(String(50), unique=True, nullable=False)  # Username field, must be unique
+    users = db.relationship('User', secondary='user_classes', backref='classes')
 
 class Events(db.Model):
     __tablename__ = 'events'
@@ -37,15 +43,6 @@ class Events(db.Model):
     def __repr__(self):
         return f"<Event(id={self.id}, title={self.title}, start={self.start}, end={self.end} user_id={self.user_id})>"   # Prints event info
      
-
-class Class(db.Model):
-    __tablename__ = 'classes'
-
-    id = Column(Integer, primary_key=True, autoincrement=True)  # Auto-incrementing primary key
-    name = Column(String(50), unique=True, nullable=False)  # Username field, must be unique
-    users = db.relationship('User', secondary='user_classes', backref='classes')
-
-
 class UserClass(db.Model):
     __tablename__ = 'user_classes'
 
@@ -70,20 +67,28 @@ class User(db.Model, UserMixin):
      secondaryjoin=id==friends_table.c.friend_id,
      backref='added_by'
  )
+    display_picture = db.Column(db.String(100), nullable=True)  # Display picture field
+    major = db.Column(db.String(100), nullable=True)  # Major field
+    photo1 = db.Column(db.String(150), nullable=True)
+    photo2 = db.Column(db.String(150), nullable=True)
+    photo3 = db.Column(db.String(150), nullable=True)
 
-    def __init__(self, username, email, password, bio="About Me", nickname="nickname", is_teacher=False):
+
+    def __init__(self, username, email, password, bio="About Me", nickname="nickname", is_teacher=False, major = major):
         self.username = username
         self.email = email
         self.password = password
         self.nickname = nickname
         self.bio = bio
         self.is_teacher = is_teacher
+        self.major = major
+    
 
         with app.app_context():
             db.create_all()
 
     def __repr__(self):
-        return f"<User(id={self.id}, username={self.username}, email={self.email}, nickname = {self.nickname}, bio = {self.bio})>"    # Prints user info
+        return f"<User(id={self.id}, username={self.username}, email={self.email}, nickname = {self.nickname}, bio = {self.bio}, major = {self.major})>"    # Prints user info
 
 # Function to add a new user
 def create_user(db_session, username: str, email: str, password: str):

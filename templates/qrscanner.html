@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <title>QR Code Scanner</title>
     <link rel = "stylesheet" href = "../static/qrscanner.css">
-    <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500&family=Poppins&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet" />
 
     <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
     <style>
@@ -24,7 +24,7 @@
         <a href="{{url_for('chats')}}">Chats</a>
         <a href="{{url_for('resources')}}">Resources</a>
         <a href="{{url_for('calendar')}}">Calendar</a>
-        <br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br>
+        <div style = "flex-grow: 1;"></div>
         <a href="{{ url_for('connect')}}">Connect</a>
         <a href="{{url_for('logout')}}">Log Out</a>
     
@@ -79,6 +79,23 @@
     function onScanSuccess(decodedText, decodedResult) {
       const classDropdown = document.getElementById("classSelect");
       const className = classDropdown ? classDropdown.value : null;
+
+      // Only allow redirect if decoded text begins with "/scanned"
+      let path = "";
+
+      try {
+        const url = new URL(decodedText);
+        path = url.pathname + url.search;
+      } catch (e) {
+        // If it's a relative path
+        path = decodedText.startsWith("/") ? decodedText : "/" + decodedText;
+      }
+
+      if (!path.startsWith("/scanned")) {
+        console.warn("Invalid QR code: must begin with /scanned");
+        flash("Invalid QR code.");
+        return;
+      }
 
       // Append the class name to the URL as a query parameter if it exists
       const destinationUrl = className 

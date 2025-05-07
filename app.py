@@ -17,11 +17,12 @@ class LoginForm(FlaskForm):
     submit = SubmitField("Login") 
 
 class SettingsForm(FlaskForm):
-    username = StringField(validators=[Length(min=4, max = 20)], render_kw={"place_holder":"Username"})
-    email = EmailField(validators=[Length(min=4, max = 100)], render_kw={"place_holder":"email"})
-    password = PasswordField(validators=[Length(min=4, max = 20)], render_kw={"place_holder":"password"})
-    nickname = StringField('Nickname', validators=[DataRequired()],render_kw={"place_holder":"nickname"})
-    bio = StringField('Bio',validators=[DataRequired()],render_kw={"place_holder":"Bio"})
+    username = StringField(validators=[Length(min=4, max = 20), Optional()], render_kw={"place_holder":"Username"})
+    email = EmailField(validators=[Length(min=4, max = 100), Optional()], render_kw={"place_holder":"email"})
+    password = PasswordField(validators=[Length(min=4, max = 20), Optional()], render_kw={"place_holder":"password"})
+    nickname = StringField('Nickname', validators=[Optional()],render_kw={"place_holder":"nickname"})
+    bio = StringField('Bio',validators=[Optional()],render_kw={"place_holder":"Bio"})
+    major = StringField('Major',validators=[Optional()],render_kw={"place_holder":"Major"})
     submit = SubmitField('Update')
     
 
@@ -93,19 +94,34 @@ def update_event(event_id):
             return jsonify({'error': 'Invalid date format.'}), 400
     else:
         return jsonify({'error': 'Event not found.'}), 404
+    
+@app.route('/api/events/delete_all', methods=['DELETE'])
+@login_required
+def delete_all_events():
+    # Query all events for the current user
+    events = Events.query.filter_by(user_id=current_user.id).all()
+
+    if events:
+        # Delete all events
+        for event in events:
+            db.session.delete(event)
+        db.session.commit()
+        return jsonify({'message': 'All events deleted successfully!'}), 200
+    else:
+        return jsonify({'error': 'No events found to delete.'}), 404
 
 @app.route('/upload_profile_picture', methods=['POST'])
 @login_required
 def upload_profile_picture():
     if 'profile_picture' not in request.files:
-        flash('No file part', 'error')
-        return redirect(request.url)
+        flash('No file uploaded.', 'error')
+        return redirect(url_for('profile', username=current_user.username))
 
     file = request.files['profile_picture']
 
     if file.filename == '':
-        flash('No selected file', 'error')
-        return redirect(request.url)
+        flash('No file selected.', 'error')
+        return redirect(url_for('profile', username=current_user.username))
 
     if file and allowed_file(file.filename):
         filename = secure_filename(file.filename)
@@ -120,8 +136,41 @@ def upload_profile_picture():
         return redirect(url_for('profile', username=current_user.username))
     else:
         flash('Invalid file type. Please upload an image file.', 'error')
-        return redirect(request.url)
+        return redirect(url_for('profile', username=current_user.username))
     
+
+@app.route('/upload_photo/<int:photo_id>', methods=['POST'])
+@login_required
+def upload_photo(photo_id):
+    if 'photo' not in request.files:
+        flash('No file uploaded.', 'error')
+        return redirect(url_for('profile', username=current_user.username))
+
+    file = request.files['photo']
+
+    if file.filename == '':
+        flash('No file selected.', 'error')
+        return redirect(url_for('profile', username=current_user.username))
+
+    if file and allowed_file(file.filename):
+        filename = secure_filename(f"{current_user.id}_photo{photo_id}_{file.filename}")
+        file_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+        file.save(file_path)
+
+        # Update the user's photo in the database
+        if photo_id == 1:
+            current_user.photo1 = filename
+        elif photo_id == 2:
+            current_user.photo2 = filename
+        elif photo_id == 3:
+            current_user.photo3 = filename
+
+        db.session.commit()
+        flash('Photo updated successfully!', 'success')
+        return redirect(url_for('profile', username=current_user.username))
+    else:
+        flash('Invalid file type. Please upload an image file.', 'error')
+        return redirect(url_for('profile', username=current_user.username))
 @app.route('/')
 def homepage():
     return render_template("homepage.html")
@@ -152,10 +201,7 @@ def login():
 def logout():
     logout_user()
     return redirect(url_for('homepage'))
-#password recovery
-@app.route("/recover_pass", methods = ["GET", "POST"])
-def recover_pass():
-    return render_template("recover_pass.html")
+
 #register page
 @app.route("/register", methods=['GET','POST'])
 def register():
@@ -183,7 +229,8 @@ def register():
         password = hashed_password, 
         nickname = "", 
         bio = "",
-        is_teacher = form.is_teacher.data
+        is_teacher = form.is_teacher.data,
+        major = "",
         ) #set up user in database format
     
         db.session.add(new_user) #add new user to database
@@ -196,25 +243,41 @@ def register():
 
 #dashboard route
 @app.route("/dashboard", methods = ["GET", "POST"])
+@login_required
 def dashboard():
     return render_template("dashboard.html", username = current_user.username, friends=current_user.friends)
 
-@app.route("/settings/<username>", methods = ["GET", "POST"])
+@app.route("/settings/<username>", methods=["GET", "POST"])
 @login_required
 def settings(username):
     form = SettingsForm(obj=current_user)  # Pre-fill the form with the current user's data
 
     if form.validate_on_submit():
-        # Update the user's data only for the fields that were changed
-        current_user.username = form.username.data
-        current_user.email = form.email.data
-        current_user.nickname = form.nickname.data
-        current_user.bio = form.bio.data
+        # Update only the fields that are provided
+        if form.username.data and form.username.data != current_user.username:
+            current_user.username = form.username.data
+
+        if form.email.data and form.email.data != current_user.email:
+            current_user.email = form.email.data
+
+        if form.nickname.data and form.nickname.data != current_user.nickname:
+            current_user.nickname = form.nickname.data
+
+        if form.bio.data and form.bio.data != current_user.bio:
+            current_user.bio = form.bio.data
+
+        if form.major.data and form.major.data != current_user.major:
+            current_user.major = form.major.data
+
+        if form.password.data:  # Only update the password if a new one is provided
+            hashed_password = bcrypt.generate_password_hash(form.password.data)
+            current_user.password = hashed_password
 
         db.session.commit()
-        flash('Settings updated successfully!', 'success')
+        flash("Settings updated successfully!", "success")
+        return redirect(url_for("profile", username=current_user.username))
 
-    return render_template('settings.html', form=form, user=current_user)
+    return render_template("settings.html", form=form, user=current_user)
 
 @app.route("/profile/<username>", methods=['GET', 'POST'])
 @login_required
@@ -224,21 +287,16 @@ def profile(username):
 
     if current_user.username == username:
         return render_template('profile.html', user = current_user, form=form)
-    elif user in db.session:
-        return render_template('other_profile.html', user = user, form=form)
     else:
-        return "User not found", 404
+        return "Not your account bud🍔🍔🦛"
+
         
 @app.route("/other_profile/<username>", methods=['GET', 'POST'])
+@login_required
 def other_profile(username):
     user = get_user_by_username(db.session, username)
     form = SettingsForm()
     return render_template('other_profile.html', user = user, form=form)
-
-@app.route('/events', methods = ["GET", "POST"])
-@login_required
-def events():
-    return render_template('events.html')
 
 @app.route('/start_chat', methods = ["GET", "POST"])
 @login_required
@@ -293,69 +351,84 @@ def dining():
 #on campus housing routes
 
 @app.route('/legacy-park')
+@login_required
 def legacy_park():
     return render_template('legacy-park.html')
 
 @app.route('/university-park-phase1')
+@login_required
 def university_park_phase_one():
     return render_template('university-park-phase1.html')
 
 @app.route('/university-park-phase2')
+@login_required
 def university_park_phase_two():
     return render_template('university-park-phase2.html')
 
 @app.route('/park-place')
+@login_required
 def park_place():
     return render_template('park-place.html')
 
 @app.route('/adams-hall')
+@login_required
 def adams_hall():
     return render_template('adams-hall.html')
 
 @app.route('/aswell-hall')
+@login_required
 def aswell_hall():
     return render_template('aswell-hall.html')
 
 @app.route('/dudley-hall')
+@login_required
 def dudley_hall():
     return render_template('dudley-hall.html')
 
 @app.route('/cottingham-hall')
+@login_required
 def cottingham_hall():
     return render_template('cottingham-hall.html')
 
 @app.route('/graham-hall')
+@login_required
 def graham_hall():
     return render_template('graham-hall.html')
 
 @app.route('/mitchell-hall')
+@login_required
 def mitchell_hall():
     return render_template('mitchell-hall.html')
 
 @app.route('/richardson-hall')
+@login_required
 def richardson_hall():
     return render_template('richardson-hall.html')
 
 @app.route('/robinson-suite')
+@login_required
 def robinson_suite():
     return render_template('robinson-suite.html')
 
 @app.route('/potts-suite')
+@login_required
 def potts_suite():
     return render_template('potts-suite.html')
 # Connect with other users via QR code
-# Connect with other users via QR code
 @app.route("/connect")
+@login_required
 def connect():
     return render_template("connect.html")
 
 # QR code scanner route
 @app.route('/qrscanner')
+@login_required
 def scan():
     return render_template('qrscanner.html')
 
 # Route to add user when qr code scanned
 @app.route('/scanned')
+@login_required
 def scanned():
     print(request.url)
     scanned_user_id = request.args.get('userId', type=int)
@@ -394,6 +467,7 @@ def scanned():
     db.session.commit()
 
 @app.route('/create_class')
+@login_required
 def create_class():
     url = request.url
     form = SettingsForm()
@@ -420,6 +494,7 @@ def create_class():
 
 # Generates a qr code with the user's id info
 @app.route('/generate')
+@login_required
 def generate(class_name=None):
     
     user_id = current_user.id
@@ -450,6 +525,7 @@ def generate(class_name=None):
     return render_template("generate.html", qr_code_data=img_str)
 
 @app.route('/join_class', methods=['POST'])
+@login_required
 def join_class():
     # Get the user_id and class_id from the request body
     data = request.get_json()
