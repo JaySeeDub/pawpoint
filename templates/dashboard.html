@@ -46,7 +46,7 @@
         </div>
 
         <div class="welcome-banner">
-          <div class="welcome"><h1>🐾{{greeting}}, {{ current_user.username }}!🐾</h1>
+          <div class="welcome"><h1>🤍🐾{{greeting}}, {{ current_user.username }}!🤍🐾</h1>
             <p>Fun fact: {{fact}}</p>
             <img src="../static/images/PawPoint.png" alt="PawPoint Logo" class="logo" /></div>
           
@@ -74,7 +74,7 @@
               </div>         
           
         <aside class="weekly-highlights">
-          <h2>Your Events:</h2>
+          <h2>Your events for today:</h2>
           {% if events %}
             <ul>
               {% for event in events %}
@@ -84,7 +84,8 @@
               {% endfor %}
             </ul>
           {% else %}
-            <p>No events for today... Click <a href="{{ url_for('calendar') }}">here</a> to add events!</p>
+            <p>No events for today...</p>
+            <p>Click <a href="{{ url_for('calendar') }}">here</a> to add events!</p>
             <br><br>
           {% endif %}
           <h2>Your Friends: </h2>
